@@ -8,20 +8,22 @@ module.exports =
   stepchild: null
 
   activate: (state) ->
-    for arg in @configDefaults
+    for arg in @config
       if arg in state then continue
-      state[arg] = @configDefaults[arg]
+      state[arg] = @config[arg]
     atom.config.set('build-tools-cpp',state);
     BuildToolsCommandOutput = require './build-tools-view'
     @buildToolsView = new BuildToolsCommandOutput()
-    atom.workspaceView.command "build-tools-cpp:pre-configure", ".editor", =>
-      @step1()
-    atom.workspaceView.command "build-tools-cpp:configure", ".editor", =>
-      @step2()
-    atom.workspaceView.command "build-tools-cpp:make", ".editor", =>
-      @step3()
+    atom.workspaceView.command "build-tools-cpp:flash", ".editor", =>
+      @doFlash()
+    atom.workspaceView.command "build-tools-cpp:list",  ".editor", =>
+      @doList()
+    atom.workspaceView.command "build-tools-cpp:clean", ".editor", =>
+      @doClean()
+    atom.workspaceView.command "build-tools-cpp:build", ".editor", =>
+      @doBuild()
     atom.workspaceView.command "build-tools-cpp:toggle", ".editor", => @toggle()
-    atom.workspaceView.on "core:cancel core:close", => @cancel()
+    #atom.workspaceView.on "core:cancel core:close", => @cancel()
 
   deactivate: ->
     @stepchild?.kill('SIGKILL')
@@ -109,10 +111,9 @@ module.exports =
             @buildToolsView.lock()
             @kill()
           @stepchild.on 'exit', (exitcode, signal) =>
-            @buildToolsView.setHeader
-            (cmd.cmd + ": finished with exitcode #{exitcode}") if exitcode?
-            @buildToolsView.setHeader
-            (cmd.cmd + ": finished with signal #{signal}") if signal?
+            @buildToolsView.setHeader (cmd.cmd + ": finished with exitcode #{exitcode}") if exitcode?
+            @buildToolsView.setHeader (cmd.cmd + ": Done") if exitcode == 0
+            @buildToolsView.setHeader (cmd.cmd + ": finished with signal #{signal}") if signal?
             @buildToolsView.finishConsole()
             @stepchild = null
           return cmd
@@ -131,29 +132,45 @@ module.exports =
         return
     return
 
-  step1: ->
+  doFlash: ->
     cwd_string = atom.config.get('build-tools-cpp.BuildFolder')
-    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.Pre_Configure_Command'),cwd_string)
+    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.A_Flash_Command'),cwd_string)
     cmd = @spawn cmd_string, cwd_string
     if @stepchild
       @stepchild.stdout.on 'data', (data) =>
         @buildToolsView.outputLineParsed data, ''
       @stepchild.stderr.on 'data', (data) =>
         @buildToolsView.outputLineParsed data, ''
+      @stepchild.on 'exit', (exitcode, signal) =>
+        @buildToolsView.setHeader ('Uploaded!') if exitcode == 0
 
-  step2: ->
+  doList: ->
     cwd_string = atom.config.get('build-tools-cpp.BuildFolder')
-    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.Configure_Command'),cwd_string)
+    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.B_List_Command'),cwd_string)
     cmd = @spawn cmd_string, cwd_string
     if @stepchild
       @stepchild.stdout.on 'data', (data) =>
         @buildToolsView.outputLineParsed data, ''
       @stepchild.stderr.on 'data', (data) =>
         @buildToolsView.outputLineParsed data, ''
+      @stepchild.on 'exit', (exitcode, signal) =>
+        @buildToolsView.setHeader ('Listed!') if exitcode == 0
 
-  step3: ->
+  doClean: ->
     cwd_string = atom.config.get('build-tools-cpp.BuildFolder')
-    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.Build_Command'),cwd_string)
+    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.C_Clean_Command'),cwd_string)
+    cmd = @spawn cmd_string, cwd_string
+    if @stepchild
+      @stepchild.stdout.on 'data', (data) =>
+        @buildToolsView.outputLineParsed data, ''
+      @stepchild.stderr.on 'data', (data) =>
+        @buildToolsView.outputLineParsed data, ''
+      @stepchild.on 'exit', (exitcode, signal) =>
+        @buildToolsView.setHeader ('Cleaned!') if exitcode == 0
+
+  doBuild: ->
+    cwd_string = atom.config.get('build-tools-cpp.BuildFolder')
+    cmd_string = wc.replaceWildcards(atom.config.get('build-tools-cpp.D_Build_Command'),cwd_string)
     cmd = @spawn cmd_string, cwd_string
     if @stepchild
       @stepchild.stdout.on 'data', (data) =>
@@ -164,11 +181,35 @@ module.exports =
       else
         @stepchild.stderr.on 'data', (data) =>
           @buildToolsView.outputLineParsed data, '' #No highlighting
+      @stepchild.on 'exit', (exitcode, signal) =>
+        @buildToolsView.setHeader ('Built!') if exitcode == 0
 
-  configDefaults:
-    Pre_Configure_Command: ""
-    Configure_Command: ""
-    Build_Command: "make"
-    BuildFolder: "."
-    ErrorHighlighting: true
-    SourceFileExtensions: '".cpp",".h",".c",".hpp"'
+  config:
+    A_Flash_Command:
+      title: 'How to upload project to device'
+      type:    'string'
+      default: 'make run'
+    B_List_Command:
+      title: 'How to list connected devices'
+      type:    'string'
+      default: 'make run list'
+    C_Clean_Command:
+      title: 'How to clean project'
+      type:    'string'
+      default: 'make clean'
+    D_Build_Command:
+      title: 'How to build project'
+      type:    'string'
+      default: 'make all'
+    ErrorHighlighting:
+      title: 'Highlighting Errors'
+      type: 'boolean'
+      default: true
+    SourceFileExtensions:
+      title: 'Source File Extensions'
+      type: 'string'
+      default: '".cpp",".h",".c",".hpp"'
+    BuildFolder:
+      title: 'Build directory'
+      type: 'string'
+      default: "."

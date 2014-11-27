@@ -2,12 +2,13 @@
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'Build tools C/C++'
+      'label': 'Mesh-Embedded projects'
       'submenu': [
-        { 'label': 'Toggle window', 'command': 'build-tools-cpp:toggle' },
-        { 'label': 'Run pre-configure command', 'command': 'build-tools-cpp:pre-configure'}
-        { 'label': 'Run configure command', 'command': 'build-tools-cpp:configure'},
-        { 'label': 'Run build command', 'command': 'build-tools-cpp:make'}
+        { 'label': 'Toggle window',         'command': 'build-tools-cpp:toggle' },
+        { 'label': 'Upload to device',      'command': 'build-tools-cpp:flash'  },
+        { 'label': 'List connected boards', 'command': 'build-tools-cpp:list'   },
+        { 'label': 'Clean project',         'command': 'build-tools-cpp:clean'  },
+        { 'label': 'Build',                 'command': 'build-tools-cpp:build'  }
       ]
     ]
   }

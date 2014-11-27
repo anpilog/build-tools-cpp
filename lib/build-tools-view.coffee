@@ -4,15 +4,32 @@ parser = require './build-parser.coffee'
 module.exports =
 class BuildToolsCommandOutput extends View
   @content: ->
-    @div class: 'build-tools-cpp', =>
+    @div class:'build-tools-cpp', =>
       @div class:"commandheader horizontal", =>
-        @div class:"commandname"
-        @div class:"commandclose"
-      @div class:"commandoutput", outlet:"cmd_output"
+        @div class:"btn-container pull-left", style:"width:70px;height:150px;", =>
+          @div class: '', =>
+            @input id:"mesh_build" , type:"button", value:"BUILD" , class: 'btn btn-default mesh-tool-btn'
+          @div class: '', =>
+            @input id:"mesh_clean" , type:"button", value:"CLEAN" , class: 'btn btn-default mesh-tool-btn'
+          @div class: '', =>
+            @input id:"mesh_list"  , type:"button", value:"LIST"  , class: 'btn btn-default mesh-tool-btn'
+          @div class: '', =>
+            @input id:"mesh_upload", type:"button", value:"UPLOAD", class: 'btn btn-default mesh-tool-btn'
+        @div class:"commandoutput", outlet:"cmd_output"
+        @div class:"commandname panel-body", style:"height:20px;"
 
   initialize: ->
     $(document).on 'click','.commandclose', =>
       @hideBox()
+    $(document).on "click", '#mesh_build', =>
+      atom.packages.getActivePackage('build-tools-cpp').mainModule.doBuild()
+    $(document).on "click", '#mesh_clean', =>
+      atom.packages.getActivePackage('build-tools-cpp').mainModule.doClean()
+    $(document).on "click", '#mesh_list', =>
+      atom.packages.getActivePackage('build-tools-cpp').mainModule.doList()
+    $(document).on "click", '#mesh_upload', =>
+      atom.packages.getActivePackage('build-tools-cpp').mainModule.doFlash()
+    @showBox()
     return
 
   serialize: ->
@@ -39,10 +56,10 @@ class BuildToolsCommandOutput extends View
     @visible = true
 
   showHeaderLineOnly: ->
-    $(document).find(".commandoutput").addClass("build-tools-cpp-hidden")
+    #$(document).find(".commandoutput").addClass("build-tools-cpp-hidden")
 
   showOutput: ->
-    $(document).find(".commandoutput").removeClass("build-tools-cpp-hidden")
+    #$(document).find(".commandoutput").removeClass("build-tools-cpp-hidden")
 
   toggleBox: ->
     if @visible
@@ -88,5 +105,5 @@ class BuildToolsCommandOutput extends View
   unlock: ->
     @lockoutput = false
 
-  visible: false
+  visible: true
   lockoutput: false
